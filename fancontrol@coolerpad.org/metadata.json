@@ -1,0 +1,10 @@
+{
+    "name" : "Cooler pad fan control",
+    "description" : "Manage your cooler pad fans",
+    "shell-version" :  [ 
+        "3.36.9"
+    ],
+    "url" : "",
+    "uuid" : "fancontrol@coolerpad.org",
+    "version" : 1
+}

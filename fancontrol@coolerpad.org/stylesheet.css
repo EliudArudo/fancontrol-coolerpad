@@ -1,0 +1,10 @@
+.panel-icon-no-border {
+    padding: 4px 0;
+    width: 22px;
+}
+
+.v2-icon,
+.panel-icon-border {
+    padding: 6px 0;
+    width: 16px;
+}

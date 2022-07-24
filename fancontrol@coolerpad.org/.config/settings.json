@@ -1,0 +1,13 @@
+{
+    "update_time": 5,
+    "fan_speed_threshold": 3000,
+    "gpu_temperature_threshold": 50,
+    "usb_hub": "",
+    "usb_port": 0,
+    "default_state": "off",
+    "usb_options": {
+        "on": "On",
+        "off": "Off",
+        "auto": "Auto"
+    }
+}
