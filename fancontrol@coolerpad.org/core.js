@@ -24,6 +24,7 @@ const version = 'v4';
 const gicon_off = Gio.icon_new_for_string(Me.path + `/icons/${version}/fan-default.svg`);
 const gicon_on = Gio.icon_new_for_string(Me.path + `/icons/${version}/fan-on.svg`);
 const gicon_auto = Gio.icon_new_for_string(Me.path + `/icons/${version}/fan-auto.svg`);
+const gicon_temprange = Gio.icon_new_for_string(Me.path + `/icons/${version}/fan-temprange.svg`);
 const gicon_disabled = Gio.icon_new_for_string(Me.path + `/icons/${version}/fan-disabled.svg`);
 
 const settingsFile = Gio.File.new_for_path(Me.path + '/.config/settings.json');

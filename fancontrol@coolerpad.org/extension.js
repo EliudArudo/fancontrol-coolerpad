@@ -18,6 +18,7 @@ const {
     gicon_on,
     gicon_auto,
     gicon_disabled,
+    gicon_temprange,
     settingsFile,
 } = Me.imports.core;
 
@@ -41,22 +42,27 @@ const MyPopup = GObject.registerClass(
             super._init(0);
 
             this._actionsAreDisabled = false;
+            this._keepTempRangeFanOn = false;
 
             this._onButton = null;
             this._offButton = null;
             this._autoButton = null;
+            this._tempRangeButton = null;
             this._refreshButton = null;
             this._preferencesButton = null;
 
             this._onButtonId = null;
             this._offButtonId = null;
             this._autoButtonId = null;
+            this._tempRangeButtonId = null;
             this._refreshButtonId = null;
             this._preferencesButtonId = null;
 
             this._updateTime = null;
             this._fanSpeedThreshold = null;
             this._gpuTempThreshold = null;
+            this._tempLowerRange = null;
+            this._tempUpperRange = null;
             this._usbHub = null;
             this._usbPort = null;
             this._defaultState = null;
@@ -75,6 +81,7 @@ const MyPopup = GObject.registerClass(
             this._onButton = new PopupMenu.PopupMenuItem('• On');
             this._offButton = new PopupMenu.PopupMenuItem('  Off');
             this._autoButton = new PopupMenu.PopupMenuItem('  Auto');
+            this._tempRangeButton = new PopupMenu.PopupMenuItem('  Temp Range');
             this._refreshButton = new PopupMenu.PopupMenuItem('Refresh');
             this._preferencesButton = new PopupMenu.PopupMenuItem('Preferences');
             
@@ -83,6 +90,7 @@ const MyPopup = GObject.registerClass(
             this.menu.addMenuItem(this._onButton);
             this.menu.addMenuItem(this._offButton);
             this.menu.addMenuItem(this._autoButton);
+            this.menu.addMenuItem(this._tempRangeButton);
             this.menu.addMenuItem(separator);
             this.menu.addMenuItem(this._refreshButton);
             this.menu.addMenuItem(this._preferencesButton);
@@ -90,6 +98,7 @@ const MyPopup = GObject.registerClass(
             this._setupOnButtonListener(this._onButton);
             this._setupOffButtonListener(this._offButton);  
             this._setupAutoButtonListener(this._autoButton);
+            this._setupTempRangeButtonListener(this._tempRangeButton);
             this._setupRefreshButtonListener(this._refreshButton);
             this._setupPreferencesButtonListener(this._preferencesButton);
             this._setMenuListener();
@@ -115,7 +124,11 @@ const MyPopup = GObject.registerClass(
                         break;
                     case 'auto':
                         await this._startAutoProcess();
-                        break;        
+                        break;
+                    case 'temp_range':
+                        this._tempRangeIsActivated = true;
+                        await this._startTempRangeProcess();
+                        break;            
                 }
             } catch(error) {
                 log(`Cannot first initialize settings: Error: ${error}`);
@@ -189,7 +202,10 @@ const MyPopup = GObject.registerClass(
                     break;
                 case 'auto':
                     this._icon.gicon = gicon_auto;
-                    break;        
+                    break;    
+                case 'temprange':
+                    this._icon.gicon = gicon_temprange;
+                    break;          
                 }
                 this._icon.set_style_class_name('v2-icon'); 
          }
@@ -198,6 +214,8 @@ const MyPopup = GObject.registerClass(
             this._updateTime = this._settings.update_time;
             this._fanSpeedThreshold = this._settings.fan_speed_threshold;
             this._gpuTempThreshold = this._settings.gpu_temperature_threshold;
+            this._tempLowerRange = this._settings.temp_range_lower;
+            this._tempUpperRange = this._settings.temp_range_upper;
             this._usbHub = this._settings.usb_hub;
             this._usbPort = this._settings.usb_port;
             this._defaultState = this._settings.default_state;
@@ -258,6 +276,15 @@ const MyPopup = GObject.registerClass(
             });
         }
 
+        _setupTempRangeButtonListener(tempRangeButton) {
+            this._tempRangeButtonId = tempRangeButton.connect("activate", () => {
+                if(this._isActive(tempRangeButton)) {
+                    return;
+                }
+                this._startTempRangeProcess();
+            });
+        }
+
         _setupRefreshButtonListener(refreshButton) {
             this._refreshButtonId = refreshButton.connect("activate", () => {
                 log("Refreshing extension");
@@ -282,31 +309,52 @@ const MyPopup = GObject.registerClass(
             });
         }
 
-        _startTimeout() {
+        _startAutoProcessTimeout() {
             this._timeout = Mainloop.timeout_add_seconds(this._settings.update_time, this._runAutoProcess.bind(this));
+        }
+
+        _startTempRangeProcessTimeout() {
+            this._timeout = Mainloop.timeout_add_seconds(this._settings.update_time, this._runTempRangeProcess.bind(this));
         }
 
         async _startAutoProcess() {
             try {
+               this._clearProcessTimeouts();
+
                await this._runAutoProcess();
-               this._startTimeout();  
+               this._startAutoProcessTimeout();  
 
                const state = 'auto';
-               await this._saveSettingsWithValue(state);
+               await this._saveDefaultStateWithValue(state);
                await this._initSettings();
             } catch(error) {
                log(`Failed to startAutoProcess: Error: ${error}`); 
             }
         }
 
+        async _startTempRangeProcess() {
+            try {
+               this._clearProcessTimeouts(); 
+
+               await this._runTempRangeProcess();
+               this._startTempRangeProcessTimeout();
+
+               const state = 'temp_range';
+               await this._saveDefaultStateWithValue(state);
+               await this._initSettings(); 
+            } catch(error) {
+                log(`Failed to start tempRangeProcess: Error: ${error}`); 
+            }
+        }
+
 
         async _powerOnPort() {
             try {
-                this._stopTimeout();
+                this._clearProcessTimeouts();
                 const state = 'on';
                 await this._powerPort(state);
                 
-                await this._saveSettingsWithValue(state);
+                await this._saveDefaultStateWithValue(state);
                 await this._initSettings();
 
             } catch(error) {
@@ -315,7 +363,7 @@ const MyPopup = GObject.registerClass(
         }
 
   
-        async _saveSettingsWithValue(state) {
+        async _saveDefaultStateWithValue(state) {
             try {
                 this._settings.default_state = state;
                 
@@ -324,7 +372,9 @@ const MyPopup = GObject.registerClass(
                     JSON.stringify(this._settings),
                 );
 
-                this._sendNotification(`Fans are ${state}`);
+                const message = state === 'temp_range'? `will turn on between ${this._settings.temp_range_lower}°C and ${this._settings.temp_range_upper}°C` : `are ${state}`;
+
+                this._sendNotification(`Fans ${message}`);
             } catch(error) {
                 log(`Error: ${error}`);
                 this._sendNotification('Failed operation', false);
@@ -349,21 +399,51 @@ const MyPopup = GObject.registerClass(
             }
         }
 
+        async _runTempRangeProcess() {
+            try {
+                await this._initSettings();
+                const { gpuTemperature } = await this._fetchCPUInfo();
+
+                let state = 'off';
+
+                if (gpuTemperature >= this._tempUpperRange) {
+                    state = 'on';
+                    this._keepTempRangeFanOn = true;
+                }
+    
+                if (gpuTemperature <= this._tempLowerRange) {
+                    state = 'off';
+                    this._keepTempRangeFanOn = false;
+                }
+
+                if (gpuTemperature > this._tempLowerRange && gpuTemperature < this._tempUpperRange) {
+                    state = this._keepTempRangeFanOn? 'on': 'off';                      
+                }    
+
+                this._powerPort(state);    
+
+            } catch(error) {
+                log(`Error: ${error}`);
+            }
+        }
+
         _updateActionButtons() {
             const buttons = [
                 this._onButton,
                 this._offButton,
                 this._autoButton,
+                this._tempRangeButton,
             ];
 
-            let text, cleanText;
+            let text, cleanText, cleanTextWithoutSpace;
 
             for(const button of buttons) {
-                text = button.actor.label.get_text();
-                cleanText = text.replace(/[•\t.+]/g, ' ');
+                text = button.actor.label.get_text(); 
+                cleanText = text.replace(/[•\t.+]/g, ' '); 
+                cleanTextWithoutSpace = cleanText.toLowerCase().replace(/\s+/g, ''); 
 
-                if(text.toLowerCase().includes(this._defaultState)) {
-                    this._setIcon(cleanText);
+                if(cleanTextWithoutSpace.includes(this._defaultState.replace('_', ''))) {
+                    this._setIcon(cleanTextWithoutSpace);
                     button.label.set_text(`• ${cleanText.trim()}`);
                     continue;
                 } 
@@ -425,7 +505,7 @@ const MyPopup = GObject.registerClass(
             }
         }
 
-        _stopTimeout() {
+        _clearProcessTimeouts() {
             try {
                 Mainloop.source_remove(this._timeout);
             } catch(error) {
@@ -435,11 +515,11 @@ const MyPopup = GObject.registerClass(
  
         async _powerOffPort() {
             try {
-                this._stopTimeout();
+                this._clearProcessTimeouts();
                 const state = 'off';
                 await this._powerPort(state);
 
-                await this._saveSettingsWithValue(state);
+                await this._saveDefaultStateWithValue(state);
                 await this._initSettings();
 
             } catch(error) {
@@ -451,12 +531,14 @@ const MyPopup = GObject.registerClass(
             this._onButton.actor.disconnect(this._onButtonId);
             this._offButton.actor.disconnect(this._offButtonId);
             this._autoButton.actor.disconnect(this._autoButtonId);
+            this._tempRangeButton.actor.disconnect(this._tempRangeButtonId);
             this._refreshButton.actor.disconnect(this._refreshButtonId);
             this._preferencesButton.actor.disconnect(this._preferencesButtonId);
 
             this._onButton = null;
             this._offButton = null;
             this._autoButton = null;
+            this._tempRangeButton = null;
             this._refreshButton = null;
             this._preferencesButton = null;
 
@@ -465,7 +547,7 @@ const MyPopup = GObject.registerClass(
         }
 
         destroy() {
-            this._stopTimeout();
+            this._clearProcessTimeouts();
             this._reset();
             super.destroy();
         }

@@ -54,7 +54,7 @@ Refer to [section 2](#1-definition) above to make sure Uhubctl is working proper
 - [__Auto__](#3-modes) - monitors GPU temperature and Fan speed threshold to switch USB port power.
 
 ## 5. Upcoming features
-### 5.1 Temp range mode
+### 5.1 Temp range mode  ✅ (v1.1)
 Sets a lower and upper boundary of temperature where if it reaches the higher boundary, the USB port power is switched on. When cooled till it has reached the lower boundary, it's switched off. 
 
 ## Picture references
