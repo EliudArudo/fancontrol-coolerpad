@@ -33,6 +33,9 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeBox = null;
             this._fanSpeedThresholdBox = null;
             this._gpuTempThresholdBox = null;
+            this._tempRangeLabelBox = null;
+            this._tempLowerRangeBox = null;
+            this._tempUpperRangeBox = null;
             this._usbHubSettingsTitleBox = null;
             this._usbHubBox = null;
             this._usbPortBox = null;
@@ -42,6 +45,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButton = null;
             this._fanSpeedThresholdInput = null;
             this._gpuTempThresholdInput = null;
+            this._tempLowerRangeSpinButton = null;
+            this._tempUpperRangeSpinButton = null;
             this._usbHubInput = null;
             this._usbPortInput = null;
             this._combobox = null;
@@ -52,6 +57,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButtonId = null;
             this._fanSpeedThresholdInputId = null;
             this._gpuTempThresholdInputId = null;
+            this._tempLowerRangeSpinButtonId = null;
+            this._tempUpperRangeSpinButtonId = null;
             this._usbHubInputId = null;
             this._usbPortInputId = null;
             this._comboboxId = null;
@@ -59,7 +66,8 @@ const MyPrefsWidget = GObject.registerClass(
 
             this._updateTimeSpinButtonValue = null;
             this._fanSpeedThresholdInputValue = null;
-            this._gpuTempThresholdInputValue = null;
+            this._tempRangeLowerSpinButtonValue = null;
+            this._tempRangeUpperSpinButtonValue = null;
             this._usbHubInputValue = null;
             this._usbPortInputValue = null;
             this._comboboxValue = null;
@@ -100,6 +108,8 @@ const MyPrefsWidget = GObject.registerClass(
             settings.update_time = Number(this._updateTimeSpinButtonValue);
             settings.fan_speed_threshold = Number(this._fanSpeedThresholdInputValue);
             settings.gpu_temperature_threshold = Number(this._gpuTempThresholdInputValue);
+            settings.temp_range_lower = Number(this._tempRangeLowerSpinButtonValue);
+            settings.temp_range_upper = Number(this._tempRangeUpperSpinButtonValue);
             settings.usb_hub = this._usbHubInputValue;
             settings.usb_port = Number(this._usbPortInputValue);
             settings.default_state = this._comboboxValue;
@@ -130,6 +140,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButtonValue = settings.update_time;
             this._fanSpeedThresholdInputValue = settings.fan_speed_threshold;
             this._gpuTempThresholdInputValue = settings.gpu_temperature_threshold;
+            this._tempRangeLowerSpinButtonValue = settings.temp_range_lower;
+            this._tempRangeUpperSpinButtonValue = settings.temp_range_upper;
             this._usbHubInputValue = settings.usb_hub;
             this._usbPortInputValue = settings.usb_port;
             this._comboboxValue = settings.default_state;
@@ -144,6 +156,15 @@ const MyPrefsWidget = GObject.registerClass(
             });
             const gpuTempThresholdLabel = new Gtk.Label({
                 label: "GPU temprature threshold (Celcius)"
+            });
+            const tempRangeLabel = new Gtk.Label({
+                label: "Temp Range 🔻"
+            });
+            const tempRangeFROMLabel = new Gtk.Label({
+                label: "From"
+            });
+            const tempRangeTOLabel = new Gtk.Label({
+                label: "To"
             });
             const usbHubSettingsLabel = new Gtk.Label({
                 label: "USB settings"
@@ -162,12 +183,17 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButton = Gtk.SpinButton.new_with_range (1, 60, 1);
             this._fanSpeedThresholdInput = new Gtk.Entry();
             this._gpuTempThresholdInput = new Gtk.Entry();
+            this._tempLowerRangeSpinButton = Gtk.SpinButton.new_with_range (1, 120, 1);
+            this._tempUpperRangeSpinButton = Gtk.SpinButton.new_with_range (1, 120, 1);
             this._usbHubInput = new Gtk.Entry();
             this._usbPortInput = Gtk.SpinButton.new_with_range (1, 20, 1);
         
             this._updateTimeBox = new Gtk.Box();
             this._fanSpeedThresholdBox = new Gtk.Box();
             this._gpuTempThresholdBox = new Gtk.Box();
+            this._tempRangeLabelBox = new Gtk.Box();
+            this._tempLowerRangeBox = new Gtk.Box();
+            this._tempUpperRangeBox = new Gtk.Box();
             this._usbHubSettingsTitleBox = new Gtk.Box();
             this._usbHubBox = new Gtk.Box();
             this._usbPortBox = new Gtk.Box();
@@ -177,6 +203,9 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeBox.set_orientation(Gtk.Orientation.HORIZONTAL);
             this._fanSpeedThresholdBox.set_orientation(Gtk.Orientation.HORIZONTAL);
             this._gpuTempThresholdBox.set_orientation(Gtk.Orientation.HORIZONTAL);
+            this._tempRangeLabelBox.set_orientation(Gtk.Orientation.HORIZONTAL);
+            this._tempLowerRangeBox.set_orientation(Gtk.Orientation.HORIZONTAL);
+            this._tempUpperRangeBox.set_orientation(Gtk.Orientation.HORIZONTAL);
             this._usbHubSettingsTitleBox.set_orientation(Gtk.Orientation.HORIZONTAL);
             this._usbHubBox.set_orientation(Gtk.Orientation.HORIZONTAL);
             this._usbPortBox.set_orientation(Gtk.Orientation.HORIZONTAL);
@@ -185,6 +214,9 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeBox.pack_start(updateTimeLabel, false, false, 0);
             this._fanSpeedThresholdBox.pack_start(fanSpeedThresholdLabel, false, false, 0);
             this._gpuTempThresholdBox.pack_start(gpuTempThresholdLabel, false, false, 0);
+            this._tempRangeLabelBox.pack_start(tempRangeLabel, false, false, 0);
+            this._tempLowerRangeBox.pack_start(tempRangeFROMLabel, false, false, 0);
+            this._tempUpperRangeBox.pack_start(tempRangeTOLabel, false, false, 0);
             this._usbHubSettingsTitleBox.pack_start(usbHubSettingsLabel, false, false, 0);
             this._usbHubBox.pack_start(usbHubLabel, false, false, 0);
             this._usbPortBox.pack_start(usbPortLabel, false, false, 0);
@@ -193,6 +225,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeBox.pack_end(this._updateTimeSpinButton, false, false, 0);
             this._fanSpeedThresholdBox.pack_end(this._fanSpeedThresholdInput, false, false, 0);
             this._gpuTempThresholdBox.pack_end(this._gpuTempThresholdInput, false, false, 0);
+            this._tempLowerRangeBox.pack_end(this._tempLowerRangeSpinButton, false, false, 0);
+            this._tempUpperRangeBox.pack_end(this._tempUpperRangeSpinButton, false, false, 0);
             this._usbHubBox.pack_end(this._usbHubInput, false, false, 0);
             this._usbPortBox.pack_end(this._usbPortInput, false, false, 0);
      
@@ -243,15 +277,20 @@ const MyPrefsWidget = GObject.registerClass(
         _addItems() {
             const separator = new Gtk.Separator();
             const separator2 = new Gtk.Separator();
+            const separator3 = new Gtk.Separator();
 
             this.add(this._updateTimeBox);
             this.add(this._fanSpeedThresholdBox);
             this.add(this._gpuTempThresholdBox);
+            this.add(this._tempRangeLabelBox);
             this.add(separator);
+            this.add(this._tempLowerRangeBox);
+            this.add(this._tempUpperRangeBox);
+            this.add(separator2);
             this.add(this._usbHubSettingsTitleBox);
             this.add(this._usbHubBox);
             this.add(this._usbPortBox);
-            this.add(separator2);
+            this.add(separator3);
             this.add(this._defaultStateBox);
             this.add(this._messageBox);
         }
@@ -267,6 +306,14 @@ const MyPrefsWidget = GObject.registerClass(
 
             this._gpuTempThresholdInputId =  this._gpuTempThresholdInput.connect("key-release-event", (widget) => {
                 this._gpuTempThresholdInputValue = widget.get_text();
+            });
+
+            this._tempLowerRangeSpinButtonId =  this._tempLowerRangeSpinButton.connect("value-changed", (widget) => {
+                this._tempRangeLowerSpinButtonValue = widget.get_text();
+            });
+
+            this._tempUpperRangeSpinButtonId =  this._tempUpperRangeSpinButton.connect("value-changed", (widget) => {
+                this._tempRangeUpperSpinButtonValue = widget.get_text();
             });
 
             this._usbHubInputId =  this._usbHubInput.connect("key-release-event", (widget) => {
@@ -302,6 +349,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButton.set_value(Number(settings.update_time));
             this._fanSpeedThresholdInput.set_text(String(settings.fan_speed_threshold)); 
             this._gpuTempThresholdInput.set_text(String(settings.gpu_temperature_threshold));
+            this._tempLowerRangeSpinButton.set_value(Number(settings.temp_range_lower));
+            this._tempUpperRangeSpinButton.set_value(Number(settings.temp_range_upper));
             this._usbHubInput.set_text(String(settings.usb_hub));
             this._usbPortInput.set_value(Number(settings.usb_port));
 
@@ -326,6 +375,8 @@ const MyPrefsWidget = GObject.registerClass(
             if(!settings.update_time ||
              !settings.fan_speed_threshold ||
              !settings.gpu_temperature_threshold ||
+             !settings.temp_range_lower ||
+             !settings.temp_range_upper ||
              !settings.usb_hub ||
              !settings.usb_port || 
              !settings.default_state) {
@@ -337,6 +388,8 @@ const MyPrefsWidget = GObject.registerClass(
             this._updateTimeSpinButton.disconnect(this._updateTimeSpinButtonId);
             this._fanSpeedThresholdInput.disconnect(this._fanSpeedThresholdInputId);
             this._gpuTempThresholdInput.disconnect(this._gpuTempThresholdInputId);
+            this._tempLowerRangeSpinButton.disconnect(this._tempLowerRangeSpinButtonId);
+            this._tempUpperRangeSpinButton.disconnect(this._tempUpperRangeSpinButtonId);
             this._usbHubInput.disconnect(this._usbHubInputId);
             this._usbPortInput.disconnect(this._usbPortInputId);
             this._combobox.disconnect(this._comboboxId);
